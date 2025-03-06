@@ -1,0 +1,7 @@
+click
+fsspec
+memray
+numpy
+obstore
+s3fs
+zarr
