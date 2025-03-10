@@ -21,11 +21,11 @@ Number of extra copies needed to write an array to storage using Zarr. (Links ar
 
 | Filesystem | Library | Zarr version | Uncompressed                                                       | Compressed                                                       |
 |------------|---------|--------------|--------------------------------------------------------------------|------------------------------------------------------------------|
-| Local      | fsspec  | v2           | [0](flamegraphs/write-local-zarr-v2-fsspec-uncompressed.bin.html)  | [2](flamegraphs/write-local-zarr-v2-fsspec-compressed.bin.html)  |
-|            |         | v3           | [1](flamegraphs/write-local-zarr-v3-fsspec-uncompressed.bin.html)  | [2](flamegraphs/write-local-zarr-v3-fsspec-compressed.bin.html)  |
-|            | obstore | v3           | [1](flamegraphs/write-local-zarr-v3-obstore-uncompressed.bin.html) | [2](flamegraphs/write-local-zarr-v3-obstore-compressed.bin.html) |
-| S3         | fsspec  | v2           | [1](flamegraphs/write-s3-zarr-v2-fsspec-uncompressed.bin.html)     | [2](flamegraphs/write-s3-zarr-v2-fsspec-compressed.bin.html)     |
-|            |         | v3           | [1](flamegraphs/write-s3-zarr-v3-fsspec-uncompressed.bin.html)     | [2](flamegraphs/write-s3-zarr-v3-fsspec-compressed.bin.html)     |
+| Local      | fsspec  | v2           | [0](http://tomwhite.github.io/memray-array/flamegraphs/write-local-zarr-v2-fsspec-uncompressed.bin.html)  | [2](http://tomwhite.github.io/memray-array/flamegraphs/write-local-zarr-v2-fsspec-compressed.bin.html)  |
+|            |         | v3           | [1](http://tomwhite.github.io/memray-array/flamegraphs/write-local-zarr-v3-fsspec-uncompressed.bin.html)  | [2](http://tomwhite.github.io/memray-array/flamegraphs/write-local-zarr-v3-fsspec-compressed.bin.html)  |
+|            | obstore | v3           | [1](http://tomwhite.github.io/memray-array/flamegraphs/write-local-zarr-v3-obstore-uncompressed.bin.html) | [2](http://tomwhite.github.io/memray-array/flamegraphs/write-local-zarr-v3-obstore-compressed.bin.html) |
+| S3         | fsspec  | v2           | [1](http://tomwhite.github.io/memray-array/flamegraphs/write-s3-zarr-v2-fsspec-uncompressed.bin.html)     | [2](http://tomwhite.github.io/memray-array/flamegraphs/write-s3-zarr-v2-fsspec-compressed.bin.html)     |
+|            |         | v3           | [1](http://tomwhite.github.io/memray-array/flamegraphs/write-s3-zarr-v3-fsspec-uncompressed.bin.html)     | [2](http://tomwhite.github.io/memray-array/flamegraphs/write-s3-zarr-v3-fsspec-compressed.bin.html)     |
 
 ### Reads
 
@@ -33,11 +33,11 @@ Number of extra copies needed to read an array from storage using Zarr. (Links a
 
 | Filesystem | Library | Zarr version | Uncompressed                                                      | Compressed                                                      |
 |------------|---------|--------------|-------------------------------------------------------------------|-----------------------------------------------------------------|
-| Local      | fsspec  | v2           | [1](flamegraphs/read-local-zarr-v2-fsspec-uncompressed.bin.html)  | [1](flamegraphs/read-local-zarr-v2-fsspec-compressed.bin.html)  |
-|            |         | v3           | [1](flamegraphs/read-local-zarr-v3-fsspec-uncompressed.bin.html)  | [2](flamegraphs/read-local-zarr-v3-fsspec-compressed.bin.html)  |
-|            | obstore | v3           | [1](flamegraphs/read-local-zarr-v3-obstore-uncompressed.bin.html) | [2](flamegraphs/read-local-zarr-v3-obstore-compressed.bin.html) |
-| S3         | fsspec  | v2           | [2](flamegraphs/read-s3-zarr-v2-fsspec-uncompressed.bin.html)     | [2](flamegraphs/read-s3-zarr-v2-fsspec-compressed.bin.html)     |
-|            |         | v3           | [2](flamegraphs/read-s3-zarr-v3-fsspec-uncompressed.bin.html)     | [2](flamegraphs/read-s3-zarr-v3-fsspec-compressed.bin.html)     |
+| Local      | fsspec  | v2           | [1](http://tomwhite.github.io/memray-array/flamegraphs/read-local-zarr-v2-fsspec-uncompressed.bin.html)  | [1](http://tomwhite.github.io/memray-array/flamegraphs/read-local-zarr-v2-fsspec-compressed.bin.html)  |
+|            |         | v3           | [1](http://tomwhite.github.io/memray-array/flamegraphs/read-local-zarr-v3-fsspec-uncompressed.bin.html)  | [2](http://tomwhite.github.io/memray-array/flamegraphs/read-local-zarr-v3-fsspec-compressed.bin.html)  |
+|            | obstore | v3           | [1](http://tomwhite.github.io/memray-array/flamegraphs/read-local-zarr-v3-obstore-uncompressed.bin.html) | [2](http://tomwhite.github.io/memray-array/flamegraphs/read-local-zarr-v3-obstore-compressed.bin.html) |
+| S3         | fsspec  | v2           | [2](http://tomwhite.github.io/memray-array/flamegraphs/read-s3-zarr-v2-fsspec-uncompressed.bin.html)     | [2](http://tomwhite.github.io/memray-array/flamegraphs/read-s3-zarr-v2-fsspec-compressed.bin.html)     |
+|            |         | v3           | [2](http://tomwhite.github.io/memray-array/flamegraphs/read-s3-zarr-v3-fsspec-uncompressed.bin.html)     | [2](http://tomwhite.github.io/memray-array/flamegraphs/read-s3-zarr-v3-fsspec-compressed.bin.html)     |
 
 ## How to run
 
