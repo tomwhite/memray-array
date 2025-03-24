@@ -96,3 +96,10 @@ python memray-array.py read --no-compress --store-prefix=s3://cubed-unittest/mem
 mkdir -p flamegraphs
 (cd profiles; for f in $(ls *.bin); do echo $f; python -m memray flamegraph --temporal -f -o ../flamegraphs/$f.html $f; done)
 ```
+
+## Related issues
+
+* [cubed] Improve memory model by explicitly modelling buffer copies - https://github.com/cubed-dev/cubed/pull/701
+* [zarr-python] Codec pipeline memory usage - https://github.com/zarr-developers/zarr-python/issues/2904
+* [zarr-python] Add `Buffer.as_buffer_like` method - https://github.com/zarr-developers/zarr-python/issues/2925
+* [numcodecs] Switch `Buffer`s to `memoryview`s - https://github.com/zarr-developers/numcodecs/pull/656
