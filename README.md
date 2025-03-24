@@ -39,6 +39,48 @@ Number of extra copies needed to read an array from storage using Zarr. (Links a
 | S3         | fsspec  | v2           | [2](http://tomwhite.github.io/memray-array/flamegraphs/read-s3-zarr-v2-fsspec-uncompressed.bin.html)     | [2](http://tomwhite.github.io/memray-array/flamegraphs/read-s3-zarr-v2-fsspec-compressed.bin.html)     |
 |            |         | v3           | [2](http://tomwhite.github.io/memray-array/flamegraphs/read-s3-zarr-v3-fsspec-uncompressed.bin.html)     | [2](http://tomwhite.github.io/memray-array/flamegraphs/read-s3-zarr-v3-fsspec-compressed.bin.html)     |
 
+## Discussion
+
+This delves into what is happening for the different code paths, and suggests some remedies to reduce the number of buffer copies.
+
+### Writes
+
+* **Local uncompressed writes (v2 only)**  - actual copies 0, desired copies 0
+    * This is the only zero-copy case. The numpy array is passed directly to the file's [`write()`](https://docs.python.org/3/library/io.html#io.BufferedIOBase.write) method (in [`DirectoryStore`](https://github.com/zarr-developers/zarr-python/blob/support/v2/zarr/storage.py#L1111-L1112)), and since arrays implement the [buffer protocol](https://docs.python.org/3/c-api/buffer.html), no copy is made.
+* **S3 uncompressed writes (v2 only)** - actual copies 1, desired copies 0
+    * A copy of the numpy array is made by this code in fsspec (in `maybe_convert`, called from `FSMap.setitems()`): [`bytes(memoryview(value))`](https://github.com/fsspec/filesystem_spec/blob/199ee82486990a295f744820d4dd2a7180e1c7a6/fsspec/mapping.py#L206).
+    * **Remedy**: it might be possible to use the memory view in fsspec and avoid the copy, but it's probably better to focus on improvements to v3 (see below)
+
+* **Uncompressed writes (v3 only)** - actual copies 1, desired copies 0
+    * A copy of the numpy array is made by this code (in Zarr's `LocalStore`): [`memoryview(value.as_numpy_array().tobytes())`](https://github.com/zarr-developers/zarr-python/blob/8c24819809b649890cfbe5d27f7f29d77bfa0dd9/src/zarr/storage/_local.py#L57). A similar thing happens in [`FsspecStore`](https://github.com/zarr-developers/zarr-python/blob/8c24819809b649890cfbe5d27f7f29d77bfa0dd9/src/zarr/storage/_fsspec.py#L277) and obstore.
+    * **Remedy**: this could be fixed with https://github.com/zarr-developers/zarr-python/issues/2925, so the `value` `Buffer` is exposed via the buffer protocol without making a copy.
+
+* **Compressed writes** - actual copies 2, desired copies 1
+    * It is surprising that there are *two* copies, not one, given that the uncompressed case has zero copies (for local v2, at least). What's happening is that the numcodecs blosc compressor is making an extra copy when [it resizes the compressed buffer](https://github.com/zarr-developers/numcodecs/blob/3c933cf19d4d84f2efc5f3a36926d8c569514a90/numcodecs/blosc.pyx#L345). A similar thing happens for lz4 and zstd.
+    * **Remedy**: this could be fixed in numcodecs by https://github.com/zarr-developers/numcodecs/pull/656.
+
+
+### Reads
+
+* **Local reads (v2 only)**  - actual copies 1, desired copies 0
+    * The Zarr Python v2 read pipeline separates reading the bytes from storage, and filling the output array - see [`_process_chunk()`](https://github.com/zarr-developers/zarr-python/blob/support/v2/zarr/core.py#L2012-L2062). So there is necessarily a buffer copy, since the bytes are never read directly into the output array.
+    * **Remedy**: Zarr Python v2 is in bugfix mode now so there is no point in trying to change it to make fewer buffer copies. The changes would be quite invasive anyway.
+
+* **Local reads (v3 only)**  - actual copies 1 (2 for compressed), desired copies 0
+    * The Zarr Python v3 `CodecPipeline` has a [`read()`](https://github.com/zarr-developers/zarr-python/blob/8c24819809b649890cfbe5d27f7f29d77bfa0dd9/src/zarr/abc/codec.py#L358-L377) method that separates reading the bytes from storage, and filling the output array (just like v2). The [`ByteGetter`](https://github.com/zarr-developers/zarr-python/blob/8c24819809b649890cfbe5d27f7f29d77bfa0dd9/src/zarr/abc/store.py#L453-L456) class has no way of reading directly into an output array.
+    * **Remedy**: this could be fixed by https://github.com/zarr-developers/zarr-python/issues/2904, but it is potentially a major change to Zarr's internals
+
+* **S3 reads (fsspec only)**  - actual copies 2, desired copies 0
+    * Both the Python asyncio SSL library and aiohttp introduce a buffer copy when reading from S3 (using s3fs).
+    * **Remedy**: unclear, need to compare with obstore
+
+### Related issues
+
+* [cubed] Improve memory model by explicitly modelling buffer copies - https://github.com/cubed-dev/cubed/pull/701
+* [zarr-python] Codec pipeline memory usage - https://github.com/zarr-developers/zarr-python/issues/2904
+* [zarr-python] Add `Buffer.as_buffer_like` method - https://github.com/zarr-developers/zarr-python/issues/2925
+* [numcodecs] Switch `Buffer`s to `memoryview`s - https://github.com/zarr-developers/numcodecs/pull/656
+
 ## How to run
 
 Create a new virtual env (for Python 3.11), then run
@@ -96,10 +138,3 @@ python memray-array.py read --no-compress --store-prefix=s3://cubed-unittest/mem
 mkdir -p flamegraphs
 (cd profiles; for f in $(ls *.bin); do echo $f; python -m memray flamegraph --temporal -f -o ../flamegraphs/$f.html $f; done)
 ```
-
-## Related issues
-
-* [cubed] Improve memory model by explicitly modelling buffer copies - https://github.com/cubed-dev/cubed/pull/701
-* [zarr-python] Codec pipeline memory usage - https://github.com/zarr-developers/zarr-python/issues/2904
-* [zarr-python] Add `Buffer.as_buffer_like` method - https://github.com/zarr-developers/zarr-python/issues/2925
-* [numcodecs] Switch `Buffer`s to `memoryview`s - https://github.com/zarr-developers/numcodecs/pull/656
