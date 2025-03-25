@@ -4,13 +4,15 @@ Measuring memory usage of Zarr array storage operations using memray.
 
 In an ideal world array storage operations would be zero-copy, but many libraries do not achieve this in practice. The scripts here measure what the actual empirical behaviour is across different filesystems (local/cloud), libraries (fsspec/obstore), compression settings, and Zarr versions.
 
+**TL;DR: we need to fix https://github.com/zarr-developers/zarr-python/issues/2925, https://github.com/zarr-developers/numcodecs/issues/717, and https://github.com/zarr-developers/zarr-python/issues/2904**
+
 ## Summary
 
 The workload is simple: create a random 100MB NumPy array and write it to Zarr storage in a single chunk. Then (in a separate process) read it back from storage into a new NumPy array.
 
 * Writes with no compression incur a single buffer copy, *except* for Zarr v2 writing to the local filesystem. (This shows that zero copy is possible, at least.)
 * Writes with compression incur a second buffer copy, since implementations first write the compressed bytes into another buffer, which has to be around the size of the uncompressed bytes (since it is not known in advance how compressible the original is).
-* Reads with no compression incur a single copy from local files, but two copies from S3. This seems to be because the S3 libraries read lots of small blocks then join them into a larger one, whereas local files can be read in one go into a single buffer. 
+* Reads with no compression incur a single copy from local files, but two copies from S3 (except for obstore, which has a single copy). This seems to be because the S3 libraries read lots of small blocks then join them into a larger one, whereas local files can be read in one go into a single buffer. 
 * Reads with compression incur two buffer copies, *except* for Zarr v2 reading from the local filesystem.
 
 It would seem there is scope to reduce the number of copies in some of these cases.
@@ -26,6 +28,7 @@ Number of extra copies needed to write an array to storage using Zarr. (Links ar
 |            | obstore | v3           | [1](http://tomwhite.github.io/memray-array/flamegraphs/write-local-zarr-v3-obstore-uncompressed.bin.html) | [2](http://tomwhite.github.io/memray-array/flamegraphs/write-local-zarr-v3-obstore-compressed.bin.html) |
 | S3         | fsspec  | v2           | [1](http://tomwhite.github.io/memray-array/flamegraphs/write-s3-zarr-v2-fsspec-uncompressed.bin.html)     | [2](http://tomwhite.github.io/memray-array/flamegraphs/write-s3-zarr-v2-fsspec-compressed.bin.html)     |
 |            |         | v3           | [1](http://tomwhite.github.io/memray-array/flamegraphs/write-s3-zarr-v3-fsspec-uncompressed.bin.html)     | [2](http://tomwhite.github.io/memray-array/flamegraphs/write-s3-zarr-v3-fsspec-compressed.bin.html)     |
+|            | obstore | v3           | [1](http://tomwhite.github.io/memray-array/flamegraphs/write-s3-zarr-v3-obstore-uncompressed.bin.html)     | [2](http://tomwhite.github.io/memray-array/flamegraphs/write-s3-zarr-v3-obstore-compressed.bin.html)     |
 
 ### Reads
 
@@ -38,6 +41,7 @@ Number of extra copies needed to read an array from storage using Zarr. (Links a
 |            | obstore | v3           | [1](http://tomwhite.github.io/memray-array/flamegraphs/read-local-zarr-v3-obstore-uncompressed.bin.html) | [2](http://tomwhite.github.io/memray-array/flamegraphs/read-local-zarr-v3-obstore-compressed.bin.html) |
 | S3         | fsspec  | v2           | [2](http://tomwhite.github.io/memray-array/flamegraphs/read-s3-zarr-v2-fsspec-uncompressed.bin.html)     | [2](http://tomwhite.github.io/memray-array/flamegraphs/read-s3-zarr-v2-fsspec-compressed.bin.html)     |
 |            |         | v3           | [2](http://tomwhite.github.io/memray-array/flamegraphs/read-s3-zarr-v3-fsspec-uncompressed.bin.html)     | [2](http://tomwhite.github.io/memray-array/flamegraphs/read-s3-zarr-v3-fsspec-compressed.bin.html)     |
+|            | obstore | v3           | [1](http://tomwhite.github.io/memray-array/flamegraphs/read-s3-zarr-v3-obstore-uncompressed.bin.html)     | [2](http://tomwhite.github.io/memray-array/flamegraphs/read-s3-zarr-v3-obstore-compressed.bin.html)     |
 
 ## Discussion
 
@@ -66,13 +70,13 @@ This delves into what is happening for the different code paths, and suggests so
     * The Zarr Python v2 read pipeline separates reading the bytes from storage, and filling the output array - see [`_process_chunk()`](https://github.com/zarr-developers/zarr-python/blob/support/v2/zarr/core.py#L2012-L2062). So there is necessarily a buffer copy, since the bytes are never read directly into the output array.
     * **Remedy**: Zarr Python v2 is in bugfix mode now so there is no point in trying to change it to make fewer buffer copies. The changes would be quite invasive anyway.
 
-* **Local reads (v3 only)**  - actual copies 1 (2 for compressed), desired copies 0
+* **Local reads (v3 only), plus obstore local and S3**  - actual copies 1 (2 for compressed), desired copies 0 (1 for compressed)
     * The Zarr Python v3 `CodecPipeline` has a [`read()`](https://github.com/zarr-developers/zarr-python/blob/8c24819809b649890cfbe5d27f7f29d77bfa0dd9/src/zarr/abc/codec.py#L358-L377) method that separates reading the bytes from storage, and filling the output array (just like v2). The [`ByteGetter`](https://github.com/zarr-developers/zarr-python/blob/8c24819809b649890cfbe5d27f7f29d77bfa0dd9/src/zarr/abc/store.py#L453-L456) class has no way of reading directly into an output array.
     * **Remedy**: this could be fixed by https://github.com/zarr-developers/zarr-python/issues/2904, but it is potentially a major change to Zarr's internals
 
 * **S3 reads (fsspec only)**  - actual copies 2, desired copies 0
     * Both the Python asyncio SSL library and aiohttp introduce a buffer copy when reading from S3 (using s3fs).
-    * **Remedy**: unclear, need to compare with obstore
+    * **Remedy**: unclear
 
 ### Related issues
 
@@ -130,6 +134,15 @@ python memray-array.py write --store-prefix=s3://cubed-unittest/mem-array
 python memray-array.py write --no-compress --store-prefix=s3://cubed-unittest/mem-array
 python memray-array.py read --store-prefix=s3://cubed-unittest/mem-array
 python memray-array.py read --no-compress --store-prefix=s3://cubed-unittest/mem-array
+
+pip install -U 'git+https://github.com/zarr-developers/zarr-python#egg=zarr'
+export AWS_DEFAULT_REGION=...
+export AWS_ACCESS_KEY_ID=...
+export AWS_SECRET_ACCESS_KEY=...
+python memray-array.py write --library obstore --store-prefix=s3://cubed-unittest/mem-array
+python memray-array.py write --no-compress --library obstore --store-prefix=s3://cubed-unittest/mem-array
+python memray-array.py read --library obstore --store-prefix=s3://cubed-unittest/mem-array
+python memray-array.py read --no-compress --library obstore --store-prefix=s3://cubed-unittest/mem-array
 ```
 
 

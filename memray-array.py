@@ -113,6 +113,11 @@ def get_zarr_store(fs, library, store):
         if fs == "local":
             local_store = obstore.store.LocalStore(prefix=store, mkdir=True)
             return zarr.storage.ObjectStore(store=local_store)
+        elif fs == "s3":
+            s3_store = obstore.store.S3Store.from_url(store)
+            return zarr.storage.ObjectStore(store=s3_store)
+        else:
+            raise ValueError(f"unrecognised filesystem: {fs}")
     # for fsspec just return the store string since Zarr interprets it
     return store
 
