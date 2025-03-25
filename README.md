@@ -1,8 +1,8 @@
 # memray-array
 
-Measuring memory usage of array storage operations using memray.
+Measuring memory usage of Zarr array storage operations using memray.
 
-In an ideal world array storage operations would be zero-copy, but many libraries do not achieve this in practice. The scripts here measure what the actual empirical behaviour is across different filesystems (local/cloud), compression settings, and Zarr versions.
+In an ideal world array storage operations would be zero-copy, but many libraries do not achieve this in practice. The scripts here measure what the actual empirical behaviour is across different filesystems (local/cloud), libraries (fsspec/obstore), compression settings, and Zarr versions.
 
 ## Summary
 
@@ -57,7 +57,7 @@ This delves into what is happening for the different code paths, and suggests so
 
 * **Compressed writes** - actual copies 2, desired copies 1
     * It is surprising that there are *two* copies, not one, given that the uncompressed case has zero copies (for local v2, at least). What's happening is that the numcodecs blosc compressor is making an extra copy when [it resizes the compressed buffer](https://github.com/zarr-developers/numcodecs/blob/3c933cf19d4d84f2efc5f3a36926d8c569514a90/numcodecs/blosc.pyx#L345). A similar thing happens for lz4 and zstd.
-    * **Remedy**: this could be fixed in numcodecs by https://github.com/zarr-developers/numcodecs/pull/656.
+    * **Remedy**: the issue is tracked in numcodecs in https://github.com/zarr-developers/numcodecs/issues/717.
 
 
 ### Reads
@@ -79,6 +79,7 @@ This delves into what is happening for the different code paths, and suggests so
 * [cubed] Improve memory model by explicitly modelling buffer copies - https://github.com/cubed-dev/cubed/pull/701
 * [zarr-python] Codec pipeline memory usage - https://github.com/zarr-developers/zarr-python/issues/2904
 * [zarr-python] Add `Buffer.as_buffer_like` method - https://github.com/zarr-developers/zarr-python/issues/2925
+* [numcodecs] Extra memory copies in blosc, lz4, and zstd compress functions - https://github.com/zarr-developers/numcodecs/issues/717
 * [numcodecs] Switch `Buffer`s to `memoryview`s - https://github.com/zarr-developers/numcodecs/pull/656
 
 ## How to run
