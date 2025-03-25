@@ -105,7 +105,7 @@ python memray-array.py write --no-compress
 python memray-array.py read
 python memray-array.py read --no-compress
 
-pip install -U 'git+https://github.com/kylebarron/zarr-python.git@kyle/object-store#egg=zarr'
+pip install -U 'git+https://github.com/zarr-developers/zarr-python#egg=zarr'
 python memray-array.py write --library obstore
 python memray-array.py write --no-compress --library obstore
 python memray-array.py read --library obstore
