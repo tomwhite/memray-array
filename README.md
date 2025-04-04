@@ -2,7 +2,7 @@
 
 Measuring memory usage of Zarr array storage operations using memray.
 
-In an ideal world array storage operations would be zero-copy, but many libraries do not achieve this in practice. The scripts here measure what the actual empirical behaviour is across different filesystems (local/cloud), libraries (fsspec/obstore), compression settings, and Zarr versions.
+In an ideal world array storage operations would be zero-copy, but many libraries do not achieve this in practice. The scripts here measure what the actual empirical behaviour is across different filesystems (local/cloud), Zarr stores (local/s3fs/obstore), compression settings, and Zarr Python versions.
 
 **TL;DR: we need to fix https://github.com/zarr-developers/zarr-python/issues/2925, https://github.com/zarr-developers/numcodecs/issues/717, and https://github.com/zarr-developers/zarr-python/issues/2904**
 
@@ -21,12 +21,12 @@ It would seem there is scope to reduce the number of copies in some of these cas
 
 Number of extra copies needed to write an array to storage using Zarr. (Links are to memray flamegraphs.)
 
-| Filesystem | Library | Zarr version | Uncompressed                                                       | Compressed                                                       |
+| Filesystem | Store   | Zarr Python version | Uncompressed                                                       | Compressed                                                       |
 |------------|---------|--------------|--------------------------------------------------------------------|------------------------------------------------------------------|
-| Local      | fsspec  | v2           | [0](http://tomwhite.github.io/memray-array/flamegraphs/write-local-zarr-v2-fsspec-uncompressed.bin.html)  | [2](http://tomwhite.github.io/memray-array/flamegraphs/write-local-zarr-v2-fsspec-compressed.bin.html)  |
+| Local      | local   | v2           | [0](http://tomwhite.github.io/memray-array/flamegraphs/write-local-zarr-v2-fsspec-uncompressed.bin.html)  | [2](http://tomwhite.github.io/memray-array/flamegraphs/write-local-zarr-v2-fsspec-compressed.bin.html)  |
 |            |         | v3           | [1](http://tomwhite.github.io/memray-array/flamegraphs/write-local-zarr-v3-fsspec-uncompressed.bin.html)  | [2](http://tomwhite.github.io/memray-array/flamegraphs/write-local-zarr-v3-fsspec-compressed.bin.html)  |
 |            | obstore | v3           | [1](http://tomwhite.github.io/memray-array/flamegraphs/write-local-zarr-v3-obstore-uncompressed.bin.html) | [2](http://tomwhite.github.io/memray-array/flamegraphs/write-local-zarr-v3-obstore-compressed.bin.html) |
-| S3         | fsspec  | v2           | [1](http://tomwhite.github.io/memray-array/flamegraphs/write-s3-zarr-v2-fsspec-uncompressed.bin.html)     | [2](http://tomwhite.github.io/memray-array/flamegraphs/write-s3-zarr-v2-fsspec-compressed.bin.html)     |
+| S3         | s3fs    | v2           | [1](http://tomwhite.github.io/memray-array/flamegraphs/write-s3-zarr-v2-fsspec-uncompressed.bin.html)     | [2](http://tomwhite.github.io/memray-array/flamegraphs/write-s3-zarr-v2-fsspec-compressed.bin.html)     |
 |            |         | v3           | [1](http://tomwhite.github.io/memray-array/flamegraphs/write-s3-zarr-v3-fsspec-uncompressed.bin.html)     | [2](http://tomwhite.github.io/memray-array/flamegraphs/write-s3-zarr-v3-fsspec-compressed.bin.html)     |
 |            | obstore | v3           | [1](http://tomwhite.github.io/memray-array/flamegraphs/write-s3-zarr-v3-obstore-uncompressed.bin.html)     | [2](http://tomwhite.github.io/memray-array/flamegraphs/write-s3-zarr-v3-obstore-compressed.bin.html)     |
 
@@ -34,12 +34,12 @@ Number of extra copies needed to write an array to storage using Zarr. (Links ar
 
 Number of extra copies needed to read an array from storage using Zarr. (Links are to memray flamegraphs.)
 
-| Filesystem | Library | Zarr version | Uncompressed                                                      | Compressed                                                      |
+| Filesystem | Store   | Zarr Python version | Uncompressed                                                      | Compressed                                                      |
 |------------|---------|--------------|-------------------------------------------------------------------|-----------------------------------------------------------------|
-| Local      | fsspec  | v2           | [1](http://tomwhite.github.io/memray-array/flamegraphs/read-local-zarr-v2-fsspec-uncompressed.bin.html)  | [1](http://tomwhite.github.io/memray-array/flamegraphs/read-local-zarr-v2-fsspec-compressed.bin.html)  |
-|            |         | v3           | [1](http://tomwhite.github.io/memray-array/flamegraphs/read-local-zarr-v3-fsspec-uncompressed.bin.html)  | [2](http://tomwhite.github.io/memray-array/flamegraphs/read-local-zarr-v3-fsspec-compressed.bin.html)  |
+| Local      | local   | v2           | [1](http://tomwhite.github.io/memray-array/flamegraphs/read-local-zarr-v2-fsspec-uncompressed.bin.html)  | [1](http://tomwhite.github.io/memray-array/flamegraphs/read-local-zarr-v2-fsspec-compressed.bin.html)  |
+|            |        | v3           | [1](http://tomwhite.github.io/memray-array/flamegraphs/read-local-zarr-v3-fsspec-uncompressed.bin.html)  | [2](http://tomwhite.github.io/memray-array/flamegraphs/read-local-zarr-v3-fsspec-compressed.bin.html)  |
 |            | obstore | v3           | [1](http://tomwhite.github.io/memray-array/flamegraphs/read-local-zarr-v3-obstore-uncompressed.bin.html) | [2](http://tomwhite.github.io/memray-array/flamegraphs/read-local-zarr-v3-obstore-compressed.bin.html) |
-| S3         | fsspec  | v2           | [2](http://tomwhite.github.io/memray-array/flamegraphs/read-s3-zarr-v2-fsspec-uncompressed.bin.html)     | [2](http://tomwhite.github.io/memray-array/flamegraphs/read-s3-zarr-v2-fsspec-compressed.bin.html)     |
+| S3         | s3fs    | v2           | [2](http://tomwhite.github.io/memray-array/flamegraphs/read-s3-zarr-v2-fsspec-uncompressed.bin.html)     | [2](http://tomwhite.github.io/memray-array/flamegraphs/read-s3-zarr-v2-fsspec-compressed.bin.html)     |
 |            |         | v3           | [2](http://tomwhite.github.io/memray-array/flamegraphs/read-s3-zarr-v3-fsspec-uncompressed.bin.html)     | [2](http://tomwhite.github.io/memray-array/flamegraphs/read-s3-zarr-v3-fsspec-compressed.bin.html)     |
 |            | obstore | v3           | [1](http://tomwhite.github.io/memray-array/flamegraphs/read-s3-zarr-v3-obstore-uncompressed.bin.html)     | [2](http://tomwhite.github.io/memray-array/flamegraphs/read-s3-zarr-v3-obstore-compressed.bin.html)     |
 
@@ -74,7 +74,7 @@ This delves into what is happening for the different code paths, and suggests so
     * The Zarr Python v3 `CodecPipeline` has a [`read()`](https://github.com/zarr-developers/zarr-python/blob/8c24819809b649890cfbe5d27f7f29d77bfa0dd9/src/zarr/abc/codec.py#L358-L377) method that separates reading the bytes from storage, and filling the output array (just like v2). The [`ByteGetter`](https://github.com/zarr-developers/zarr-python/blob/8c24819809b649890cfbe5d27f7f29d77bfa0dd9/src/zarr/abc/store.py#L453-L456) class has no way of reading directly into an output array.
     * **Remedy**: this could be fixed by https://github.com/zarr-developers/zarr-python/issues/2904, but it is potentially a major change to Zarr's internals
 
-* **S3 reads (fsspec only)**  - actual copies 2, desired copies 0
+* **S3 reads (s3fs only)**  - actual copies 2, desired copies 0
     * Both the Python asyncio SSL library and aiohttp introduce a buffer copy when reading from S3 (using s3fs).
     * **Remedy**: unclear
 
