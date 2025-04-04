@@ -29,10 +29,13 @@ Number of extra copies needed to write an array to storage using Zarr. (Links ar
 |------------|---------|--------------|--------------------------------------------------------------------|------------------------------------------------------------------|
 | Local      | local   | v2 (2.18.5)  | [0](http://tomwhite.github.io/memray-array/flamegraphs/write-local-zarr-v2-fsspec-uncompressed.bin.html)  | [2](http://tomwhite.github.io/memray-array/flamegraphs/write-local-zarr-v2-fsspec-compressed.bin.html)  |
 |            |         | v3 (3.0.6)   | [1](http://tomwhite.github.io/memray-array/flamegraphs/write-local-zarr-v3-fsspec-uncompressed.bin.html)  | [2](http://tomwhite.github.io/memray-array/flamegraphs/write-local-zarr-v3-fsspec-compressed.bin.html)  |
+|            |         | v3 (main<sup>1</sup>)   | [0](http://tomwhite.github.io/memray-array/flamegraphs/write-local-zarr-v3-main-fsspec-uncompressed.bin.html)  | [1](http://tomwhite.github.io/memray-array/flamegraphs/write-local-zarr-v3-main-fsspec-compressed.bin.html)  |
 |            | obstore | v3 (3.0.6)   | [1](http://tomwhite.github.io/memray-array/flamegraphs/write-local-zarr-v3-obstore-uncompressed.bin.html) | [2](http://tomwhite.github.io/memray-array/flamegraphs/write-local-zarr-v3-obstore-compressed.bin.html) |
 | S3         | s3fs    | v2 (2.18.5)  | [1](http://tomwhite.github.io/memray-array/flamegraphs/write-s3-zarr-v2-fsspec-uncompressed.bin.html)     | [2](http://tomwhite.github.io/memray-array/flamegraphs/write-s3-zarr-v2-fsspec-compressed.bin.html)     |
 |            |         | v3 (3.0.6)   | [1](http://tomwhite.github.io/memray-array/flamegraphs/write-s3-zarr-v3-fsspec-uncompressed.bin.html)     | [2](http://tomwhite.github.io/memray-array/flamegraphs/write-s3-zarr-v3-fsspec-compressed.bin.html)     |
 |            | obstore | v3 (3.0.6)   | [1](http://tomwhite.github.io/memray-array/flamegraphs/write-s3-zarr-v3-obstore-uncompressed.bin.html)     | [2](http://tomwhite.github.io/memray-array/flamegraphs/write-s3-zarr-v3-obstore-compressed.bin.html)     |
+
+(1) Zarr v3 (main) includes https://github.com/zarr-developers/zarr-python/pull/2944 and https://github.com/zarr-developers/numcodecs/pull/656
 
 ### Reads
 
