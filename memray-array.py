@@ -45,7 +45,7 @@ def read(store_prefix, compress, library):
     profile = f"profiles/{label}.bin"
     rm(profile)
 
-    with memray.Tracker(profile):
+    with memray.Tracker(profile, native_traces=True):
         z = zarr.open(store, mode="r")
         arr = z[:]
         print(arr.shape)
@@ -65,7 +65,7 @@ def write(store_prefix, compress, library):
     profile = f"profiles/{label}.bin"
     rm(profile)
 
-    with memray.Tracker(profile):
+    with memray.Tracker(profile, native_traces=True):
         rng = np.random.default_rng()
         arr = rng.random((5000, 5000), dtype=np.float32)  # 100MB
         if zarr_version == "v2":
