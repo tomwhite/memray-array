@@ -2,9 +2,13 @@
 
 Measuring memory usage of Zarr array storage operations using memray.
 
-In an ideal world array storage operations would be zero-copy, but many libraries do not achieve this in practice. The scripts here measure what the actual empirical behaviour is across different filesystems (local/cloud), Zarr stores (local/s3fs/obstore), compression settings, and Zarr Python versions.
+In an ideal world array storage operations would be zero-copy, but many libraries do not achieve this in practice. The scripts here measure what the actual empirical behaviour is across different filesystems (local/cloud), Zarr stores (local/s3fs/obstore), compression settings (using numcodecs), and Zarr Python versions (v2/v3).
 
-**TL;DR: we need to fix https://github.com/zarr-developers/zarr-python/issues/2925, https://github.com/zarr-developers/numcodecs/issues/717, and https://github.com/zarr-developers/zarr-python/issues/2904**
+**TL;DR: we need to fix**
+* ~~https://github.com/zarr-developers/zarr-python/pull/2944~~ (fixed)
+* https://github.com/zarr-developers/zarr-python/issues/2925
+* ~~https://github.com/zarr-developers/numcodecs/issues/717~~ (fixed in https://github.com/zarr-developers/numcodecs/pull/656)
+* https://github.com/zarr-developers/zarr-python/issues/2904
 
 ## Summary
 
@@ -80,11 +84,12 @@ This delves into what is happening for the different code paths, and suggests so
 
 ### Related issues
 
-* [cubed] Improve memory model by explicitly modelling buffer copies - https://github.com/cubed-dev/cubed/pull/701
+* [cubed] Improve memory model by explicitly modelling buffer copies - https://github.com/cubed-dev/cubed/pull/701 (fixed)
 * [zarr-python] Codec pipeline memory usage - https://github.com/zarr-developers/zarr-python/issues/2904
 * [zarr-python] Add `Buffer.as_buffer_like` method - https://github.com/zarr-developers/zarr-python/issues/2925
-* [numcodecs] Extra memory copies in blosc, lz4, and zstd compress functions - https://github.com/zarr-developers/numcodecs/issues/717
-* [numcodecs] Switch `Buffer`s to `memoryview`s - https://github.com/zarr-developers/numcodecs/pull/656
+* [zarr-python] Avoid memory copy in local store write - https://github.com/zarr-developers/zarr-python/pull/2944 (fixed)
+* [numcodecs] Extra memory copies in blosc, lz4, and zstd compress functions - https://github.com/zarr-developers/numcodecs/issues/717 (fixed)
+* [numcodecs] Switch `Buffer`s to `memoryview`s - https://github.com/zarr-developers/numcodecs/pull/656 (fixed)
 
 ## How to run
 
