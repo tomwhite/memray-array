@@ -157,3 +157,5 @@ python memray-array.py read --no-compress --library obstore --store-prefix=s3://
 mkdir -p flamegraphs
 (cd profiles; for f in $(ls *.bin); do echo $f; python -m memray flamegraph --temporal -f -o ../flamegraphs/$f.html $f; done)
 ```
+
+Or just run `make`.
