@@ -37,7 +37,7 @@ library_option = click.option(
 @library_option
 def read(store_prefix, compress, library):
     fs = filesystem(store_prefix)
-    zarr_version = find_zarr_version(library)
+    zarr_version = find_zarr_version()
     compressed = "compressed" if compress else "uncompressed"
     label = f"read-{fs}-zarr-{zarr_version}-{library}-{compressed}"
     store = f"{store_prefix}/zarr-{zarr_version}-{library}-{compressed}.zarr"
@@ -57,7 +57,7 @@ def read(store_prefix, compress, library):
 @library_option
 def write(store_prefix, compress, library):
     fs = filesystem(store_prefix)
-    zarr_version = find_zarr_version(library)
+    zarr_version = find_zarr_version()
     compressed = "compressed" if compress else "uncompressed"
     label = f"write-{fs}-zarr-{zarr_version}-{library}-{compressed}"
     store = f"{store_prefix}/zarr-{zarr_version}-{library}-{compressed}.zarr"
@@ -101,11 +101,10 @@ def filesystem(store_prefix):
     return "local"
 
 
-def find_zarr_version(library):
-    if library == "obstore":
-        return "v3"
-    else:
-        return "v2" if zarr.__version__ < "3" else "v3"
+def find_zarr_version():
+    if "dev" in zarr.__version__:
+        return "v3-dev"
+    return "v2" if zarr.__version__ < "3" else "v3"
 
 
 def get_zarr_store(fs, library, store):
