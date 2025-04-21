@@ -60,7 +60,7 @@ This delves into what is happening for the different code paths, and suggests so
     * This is the only zero-copy case. The numpy array is passed directly to the file's [`write()`](https://docs.python.org/3/library/io.html#io.BufferedIOBase.write) method (in [`DirectoryStore`](https://github.com/zarr-developers/zarr-python/blob/support/v2/zarr/storage.py#L1111-L1112)), and since arrays implement the [buffer protocol](https://docs.python.org/3/c-api/buffer.html), no copy is made.
 * **S3 uncompressed writes (v2 only)** - actual copies 1, desired copies 0
     * A copy of the numpy array is made by this code in fsspec (in `maybe_convert`, called from `FSMap.setitems()`): [`bytes(memoryview(value))`](https://github.com/fsspec/filesystem_spec/blob/199ee82486990a295f744820d4dd2a7180e1c7a6/fsspec/mapping.py#L206).
-    * **Remedy**: it might be possible to use the memory view in fsspec and avoid the copy, but it's probably better to focus on improvements to v3 (see below)
+    * **Remedy**: it might be possible to use the memory view in fsspec and avoid the copy (see https://github.com/fsspec/s3fs/issues/959), but it's probably better to focus on improvements to v3 (see below)
 
 * **Uncompressed writes (v3 only)** - actual copies 1, desired copies 0
     * A copy of the numpy array is made by this code (in Zarr's `LocalStore`): [`memoryview(value.as_numpy_array().tobytes())`](https://github.com/zarr-developers/zarr-python/blob/8c24819809b649890cfbe5d27f7f29d77bfa0dd9/src/zarr/storage/_local.py#L57). A similar thing happens in [`FsspecStore`](https://github.com/zarr-developers/zarr-python/blob/8c24819809b649890cfbe5d27f7f29d77bfa0dd9/src/zarr/storage/_fsspec.py#L277) and obstore.
@@ -91,8 +91,10 @@ This delves into what is happening for the different code paths, and suggests so
 * [zarr-python] Codec pipeline memory usage - https://github.com/zarr-developers/zarr-python/issues/2904
 * [zarr-python] Add `Buffer.as_buffer_like` method - https://github.com/zarr-developers/zarr-python/issues/2925
 * [zarr-python] Avoid memory copy in local store write - https://github.com/zarr-developers/zarr-python/pull/2944 (fixed)
+* [zarr-python] Avoid memory copy in obstore write - https://github.com/zarr-developers/zarr-python/pull/2972
 * [numcodecs] Extra memory copies in blosc, lz4, and zstd compress functions - https://github.com/zarr-developers/numcodecs/issues/717 (fixed)
 * [numcodecs] Switch `Buffer`s to `memoryview`s - https://github.com/zarr-developers/numcodecs/pull/656 (fixed)
+* [s3fs] Using the Python buffer protocol in `pipe` - https://github.com/fsspec/s3fs/issues/959
 
 ## How to run
 
