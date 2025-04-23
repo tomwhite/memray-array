@@ -2,12 +2,17 @@
 
 Measuring memory usage of Zarr array storage operations using memray.
 
-In an ideal world array storage operations would be zero-copy, but many libraries do not achieve this in practice. The scripts here measure what the actual empirical behaviour is across different filesystems (local/cloud), Zarr stores (local/s3fs/obstore), compression settings (using numcodecs), and Zarr Python versions (v2/v3).
+In an ideal world array storage operations would be zero-copy, but many libraries do not achieve this in practice. The scripts here measure what the actual empirical behaviour is across different filesystems (local/cloud), Zarr stores (local/s3fs/obstore), compression settings (using numcodecs), Zarr Python versions (v2/v3), and Zarr formats (2/3).
 
-**TL;DR: we need to fix**
-* ~~https://github.com/zarr-developers/zarr-python/pull/2944~~ (fixed)
+## Updates
+
+* 21 April 2025. Zarr Python 3.0.7 was released, which included the fix for https://github.com/zarr-developers/zarr-python/pull/2944
+* 8 April 2025. Numcodecs 0.16.0 was released which fixed https://github.com/zarr-developers/numcodecs/issues/717, reducing the number of buffer copies in compressed writes by one.
+* 3 April 2025. https://github.com/zarr-developers/zarr-python/pull/2944 was merged, reducing the number of buffer copies for local writes using Zarr v3 by one.
+* 6 March 2025. First commit in this repo.
+
+**TL;DR: we still need to fix**
 * https://github.com/zarr-developers/zarr-python/issues/2925
-* ~~https://github.com/zarr-developers/numcodecs/issues/717~~ (fixed in https://github.com/zarr-developers/numcodecs/pull/656)
 * https://github.com/zarr-developers/zarr-python/issues/2904
 
 ## Summary
