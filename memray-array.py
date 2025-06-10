@@ -68,7 +68,7 @@ def write(store_prefix, compress, library):
     with memray.Tracker(profile, native_traces=True):
         rng = np.random.default_rng()
         arr = rng.random((5000, 5000), dtype=np.float32)  # 100MB
-        if zarr_version == "v2":
+        if zarr_version < "3":
             kwargs = {}
             if not compress:
                 kwargs["compressor"] = None
@@ -103,8 +103,8 @@ def filesystem(store_prefix):
 
 def find_zarr_version():
     if "dev" in zarr.__version__:
-        return "v3-dev"
-    return "v2" if zarr.__version__ < "3" else "v3"
+        return "3-dev"
+    return zarr.__version__
 
 
 def get_zarr_store(fs, library, store):
