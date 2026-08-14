@@ -1,0 +1,8 @@
+click
+fsspec
+memray
+numpy
+obstore
+s3fs
+zarr==3.0.8
+numcodecs>=0.16.0
