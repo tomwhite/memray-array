@@ -3,6 +3,6 @@ fsspec
 memray
 numpy
 obstore
-s3fs
+icechunk
 zarr==3.3.0
 numcodecs>=0.16.0

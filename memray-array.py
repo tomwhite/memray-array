@@ -25,7 +25,7 @@ compress_option = click.option(
 library_option = click.option(
     "--library",
     default="fsspec",
-    type=click.Choice(["fsspec", "obstore", "zarrista", "zarrista-obstore"]),
+    type=click.Choice(["fsspec", "obstore", "icechunk", "zarrista", "zarrista-obstore"]),
     help="Library to use for file IO",
 )
 
@@ -78,6 +78,27 @@ def read(store_prefix, compress, library):
                 del arr
                 del z
                 time.sleep(1)
+
+    elif library == "icechunk":
+        from icechunk import Repository, Storage
+
+        icechunk_storage = Storage.new_local_filesystem(store_prefix)
+        repo = Repository.open(icechunk_storage)
+        session = repo.readonly_session("main")
+        store = session.store
+
+        import zarr
+
+        zarr_version = find_zarr_version()
+        label = f"read-{fs}-zarr-{zarr_version}-{library}-{compressed}"
+        profile = f"profiles/{label}.bin"
+        rm(profile)
+
+        with memray.Tracker(profile, native_traces=True):
+            z = zarr.open(store, mode="r")
+            arr = z[:]
+            print(arr.shape)
+
     else:
         import zarr
 
@@ -151,6 +172,37 @@ def write(store_prefix, compress, library):
                 del arr
                 del z
                 time.sleep(1)
+    elif library == "icechunk":
+        from icechunk import Repository, Storage
+
+        icechunk_storage = Storage.new_local_filesystem(store_prefix)
+        if Repository.exists(icechunk_storage):
+            repo = Repository.open(icechunk_storage)
+        else:
+            repo = Repository.create(icechunk_storage)
+        with repo.transaction(branch="main", message="create data") as store:
+            import zarr
+
+            zarr_version = find_zarr_version()
+            label = f"write-{fs}-zarr-{zarr_version}-{library}-{compressed}"
+            profile = f"profiles/{label}.bin"
+            rm(profile)
+
+            with memray.Tracker(profile, native_traces=True):
+                rng = np.random.default_rng()
+                arr = rng.random((5000, 5000), dtype=np.float32)  # 100MB
+                kwargs = dict(config=dict(write_empty_chunks=True))
+                if not compress:
+                    kwargs["compressors"] = None
+                z = zarr.create_array(
+                    store=store,
+                    shape=arr.shape,
+                    dtype=arr.dtype,
+                    chunks=arr.shape,
+                    overwrite=True,
+                    **kwargs,
+                )
+                z[:] = arr
     else:
         import zarr
 
