@@ -11,6 +11,7 @@ In an ideal world array storage operations would be zero-copy, but many librarie
 
 ## Updates
 
+* 17 August 2026. Add icechunk as a current target.
 * 15 August 2026. Added zarrs (via Zarrista) to the comparison - the first library tested to achieve zero-copy uncompressed reads - and split the results into current and legacy tables.
 * 19 May 2025. Zarr Python 3.0.8 was released, which included the fix for https://github.com/zarr-developers/zarr-python/pull/2972
 * 14 May 2025. https://github.com/zarr-developers/zarr-python/pull/2972 was merged, reducing the number of buffer copies for obstore writes using Zarr v3 by one (local files and S3).
@@ -45,6 +46,7 @@ Number of extra copies needed to write an array to storage using Zarr. (Links ar
 |------------|---------|----------------------|-------------|--------------|------------|
 | Local      | local   | **v3 (3.3.0/0.16.5)** | 3           | [**0**](https://tomwhite.github.io/memray-array/flamegraphs/write-local-zarr-3.3.0-fsspec-uncompressed.bin.html) | [**1**](https://tomwhite.github.io/memray-array/flamegraphs/write-local-zarr-3.3.0-fsspec-compressed.bin.html) |
 |            | obstore | v3 (3.3.0/0.16.5)     | 3           | [1](https://tomwhite.github.io/memray-array/flamegraphs/write-local-zarr-3.3.0-obstore-uncompressed.bin.html) | [**1**](https://tomwhite.github.io/memray-array/flamegraphs/write-local-zarr-3.3.0-obstore-compressed.bin.html) |
+|            | icechunk | v3 (3.3.0/0.16.5)     | 3           | [1](https://tomwhite.github.io/memray-array/flamegraphs/write-local-zarr-3.3.0-icechunk-uncompressed.bin.html) | [2](https://tomwhite.github.io/memray-array/flamegraphs/write-local-zarr-3.3.0-icechunk-compressed.bin.html) |
 |            | local   | zarrista 0.1.0        | 3           | [1](https://tomwhite.github.io/memray-array/flamegraphs/write-local-zarrista-0.1.0-local-uncompressed.bin.html) | [**1**](https://tomwhite.github.io/memray-array/flamegraphs/write-local-zarrista-0.1.0-local-compressed.bin.html) |
 |            | obstore | zarrista 0.1.0        | 3           | [1](https://tomwhite.github.io/memray-array/flamegraphs/write-local-zarrista-0.1.0-obstore-uncompressed.bin.html) | [**1**](https://tomwhite.github.io/memray-array/flamegraphs/write-local-zarrista-0.1.0-obstore-compressed.bin.html) |
 
@@ -60,6 +62,7 @@ Number of extra copies needed to read an array from storage using Zarr. (Links a
 |------------|---------|----------------------|-------------|--------------|------------|
 | Local      | local   | v3 (3.3.0/0.16.5)     | 3           | [1](https://tomwhite.github.io/memray-array/flamegraphs/read-local-zarr-3.3.0-fsspec-uncompressed.bin.html) | [2](https://tomwhite.github.io/memray-array/flamegraphs/read-local-zarr-3.3.0-fsspec-compressed.bin.html) |
 |            | obstore | v3 (3.3.0/0.16.5)     | 3           | [1](https://tomwhite.github.io/memray-array/flamegraphs/read-local-zarr-3.3.0-obstore-uncompressed.bin.html) | [2](https://tomwhite.github.io/memray-array/flamegraphs/read-local-zarr-3.3.0-obstore-compressed.bin.html) |
+|            | icechunk | v3 (3.3.0/0.16.5)     | 3           | [2](https://tomwhite.github.io/memray-array/flamegraphs/read-local-zarr-3.3.0-icechunk-uncompressed.bin.html) | [2](https://tomwhite.github.io/memray-array/flamegraphs/read-local-zarr-3.3.0-icechunk-compressed.bin.html) |
 |            | local   | **zarrista 0.1.0**    | 3           | [**0**](https://tomwhite.github.io/memray-array/flamegraphs/read-local-zarrista-0.1.0-local-uncompressed.bin.html) | [**1**](https://tomwhite.github.io/memray-array/flamegraphs/read-local-zarrista-0.1.0-local-compressed.bin.html) |
 |            | obstore | **zarrista 0.1.0**    | 3           | [**0**](https://tomwhite.github.io/memray-array/flamegraphs/read-local-zarrista-0.1.0-obstore-uncompressed.bin.html) | [**1**](https://tomwhite.github.io/memray-array/flamegraphs/read-local-zarrista-0.1.0-obstore-compressed.bin.html) |
 

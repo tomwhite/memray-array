@@ -25,6 +25,8 @@ CURRENT_PROFILES = \
 	$(PROFILES_DIR)/write-local-zarr-$(CURRENT_ZARR)-fsspec-uncompressed.bin \
 	$(PROFILES_DIR)/write-local-zarr-$(CURRENT_ZARR)-obstore-compressed.bin \
 	$(PROFILES_DIR)/write-local-zarr-$(CURRENT_ZARR)-obstore-uncompressed.bin \
+	$(PROFILES_DIR)/write-local-zarr-$(CURRENT_ZARR)-icechunk-compressed.bin \
+	$(PROFILES_DIR)/write-local-zarr-$(CURRENT_ZARR)-icechunk-uncompressed.bin \
 	$(PROFILES_DIR)/write-local-zarrista-0.1.0-local-compressed.bin \
 	$(PROFILES_DIR)/write-local-zarrista-0.1.0-local-uncompressed.bin \
 	$(PROFILES_DIR)/write-local-zarrista-0.1.0-obstore-compressed.bin \
@@ -33,6 +35,8 @@ CURRENT_PROFILES = \
 	$(PROFILES_DIR)/read-local-zarr-$(CURRENT_ZARR)-fsspec-uncompressed.bin \
 	$(PROFILES_DIR)/read-local-zarr-$(CURRENT_ZARR)-obstore-compressed.bin \
 	$(PROFILES_DIR)/read-local-zarr-$(CURRENT_ZARR)-obstore-uncompressed.bin \
+	$(PROFILES_DIR)/read-local-zarr-$(CURRENT_ZARR)-icechunk-compressed.bin \
+	$(PROFILES_DIR)/read-local-zarr-$(CURRENT_ZARR)-icechunk-uncompressed.bin \
 	$(PROFILES_DIR)/read-local-zarrista-0.1.0-local-compressed.bin \
 	$(PROFILES_DIR)/read-local-zarrista-0.1.0-local-uncompressed.bin \
 	$(PROFILES_DIR)/read-local-zarrista-0.1.0-obstore-compressed.bin \
@@ -49,6 +53,8 @@ CURRENT_PAIRS = \
 	zarr-$(CURRENT_ZARR)-fsspec-uncompressed \
 	zarr-$(CURRENT_ZARR)-obstore-compressed \
 	zarr-$(CURRENT_ZARR)-obstore-uncompressed \
+	zarr-$(CURRENT_ZARR)-icechunk-compressed \
+	zarr-$(CURRENT_ZARR)-icechunk-uncompressed \
 	zarrista-0.1.0-local-compressed \
 	zarrista-0.1.0-local-uncompressed \
 	zarrista-0.1.0-obstore-compressed \
@@ -80,6 +86,21 @@ $(PROFILES_DIR)/read-local-zarr-$(CURRENT_ZARR)-obstore-compressed.bin: memray-a
 
 $(PROFILES_DIR)/read-local-zarr-$(CURRENT_ZARR)-obstore-uncompressed.bin: memray-array.py $(CURRENT_CONFIG)
 	$(UV_RUN) $(CURRENT_CONFIG) memray-array.py read --no-compress --library obstore
+
+# latest zarr-python — icechunk — local
+# Each variant gets its own clean prefix so compressed/uncompressed don't clobber
+# each other in a shared repo (reads run after all writes).
+$(PROFILES_DIR)/write-local-zarr-$(CURRENT_ZARR)-icechunk-compressed.bin: memray-array.py $(CURRENT_CONFIG)
+	$(UV_RUN) $(CURRENT_CONFIG) memray-array.py write --library icechunk --store-prefix data/icechunk-compressed
+
+$(PROFILES_DIR)/write-local-zarr-$(CURRENT_ZARR)-icechunk-uncompressed.bin: memray-array.py $(CURRENT_CONFIG)
+	$(UV_RUN) $(CURRENT_CONFIG) memray-array.py write --no-compress --library icechunk --store-prefix data/icechunk-uncompressed
+
+$(PROFILES_DIR)/read-local-zarr-$(CURRENT_ZARR)-icechunk-compressed.bin: memray-array.py $(CURRENT_CONFIG)
+	$(UV_RUN) $(CURRENT_CONFIG) memray-array.py read --library icechunk --store-prefix data/icechunk-compressed
+
+$(PROFILES_DIR)/read-local-zarr-$(CURRENT_ZARR)-icechunk-uncompressed.bin: memray-array.py $(CURRENT_CONFIG)
+	$(UV_RUN) $(CURRENT_CONFIG) memray-array.py read --no-compress --library icechunk --store-prefix data/icechunk-uncompressed
 
 # zarrista 0.1.0 — local
 $(PROFILES_DIR)/write-local-zarrista-0.1.0-local-compressed.bin: memray-array.py configs/zarrista-0.1.0.txt

@@ -38,16 +38,18 @@ VERSION_DISPLAY = {
 }
 
 STORE_LABEL = {
-    ("local", "fsspec"):  "local",
-    ("local", "obstore"): "obstore",
-    ("local", "local"):   "local",
+    ("local", "fsspec"):   "local",
+    ("local", "obstore"):  "obstore",
+    ("local", "icechunk"): "icechunk",
+    ("local", "local"):    "local",
 }
 
 ROW_ORDER = [
-    ("local", "fsspec",  "3.3.0"),
-    ("local", "obstore", "3.3.0"),
-    ("local", "local",   "zarrista-0.1.0"),
-    ("local", "obstore", "zarrista-0.1.0"),
+    ("local", "fsspec",   "3.3.0"),
+    ("local", "obstore",  "3.3.0"),
+    ("local", "icechunk", "3.3.0"),
+    ("local", "local",    "zarrista-0.1.0"),
+    ("local", "obstore",  "zarrista-0.1.0"),
 ]
 
 
@@ -74,7 +76,7 @@ def copy_count(peak: int) -> int:
 def parse_profile(path: Path):
     """Return (op, fs, version, library, compression) or None."""
     m = re.fullmatch(
-        r"(read|write)-(local|s3)-zarr-(\d+\.\d+\.\d+)-(fsspec|obstore)"
+        r"(read|write)-(local|s3)-zarr-(\d+\.\d+\.\d+)-(fsspec|obstore|icechunk)"
         r"-(compressed|uncompressed)\.bin",
         path.name,
     )
