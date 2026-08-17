@@ -2,6 +2,7 @@
 """Read memray profiles, compute copy counts, and update the README tables."""
 
 import json
+import os
 import re
 import subprocess
 import sys
@@ -9,6 +10,15 @@ import tempfile
 from pathlib import Path
 
 ARRAY_BYTES = 5_000 * 5_000 * 4  # 100 MB float32
+
+# Flamegraphs are linked by absolute URL to the GitHub Pages copy, since
+# github.com serves committed .html files as source rather than rendering them.
+# Set FLAMEGRAPH_BASE=flamegraphs to generate relative links to the local files
+# instead (useful for checking freshly generated, unpushed flamegraphs).
+FLAMEGRAPH_BASE = (
+    os.environ.get("FLAMEGRAPH_BASE")
+    or "https://tomwhite.github.io/memray-array/flamegraphs"
+).rstrip("/")
 
 BEST = {
     ("write", "compressed"):   1,
@@ -81,7 +91,7 @@ def parse_profile(path: Path):
     return None
 
 
-def make_cell(n: int, op: str, compression: str, fg: Path) -> str:
+def make_cell(n: int, op: str, compression: str, fg: str) -> str:
     label = f"**{n}**" if n == BEST[(op, compression)] else str(n)
     return f"[{label}]({fg})"
 
@@ -137,8 +147,11 @@ def update_readme(readme: Path, writes_table: str, reads_table: str) -> None:
             r".*?"
             r"(<!-- end-table:" + marker + r" -->)"
         )
+        # The blank lines around the table are required: kramdown (GitHub Pages)
+        # swallows markdown that directly abuts an HTML comment block, so
+        # without them the table renders as a paragraph on the Pages site.
         new_text, count = re.subn(
-            pattern, rf"\1\n{table}\2", text, flags=re.DOTALL
+            pattern, rf"\1\n\n{table}\n\2", text, flags=re.DOTALL
         )
         if count == 0:
             print(f"WARNING: marker begin-table:{marker} not found in README", file=sys.stderr)
@@ -166,7 +179,7 @@ def main() -> None:
             continue
 
         n = copy_count(peak)
-        fg = Path("flamegraphs") / (profile.name + ".html")
+        fg = f"{FLAMEGRAPH_BASE}/{profile.name}.html"
         key = (fs, library, version, compression)
         (writes if op == "write" else reads)[key] = (n, fg)
         print(f"  {n} copies (peak {peak:,})", flush=True)

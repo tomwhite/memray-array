@@ -281,6 +281,9 @@ all: flamegraphs table
 flamegraphs: $(HTML)
 
 # Regenerate the current-results tables in README.md from the current profiles.
+# Flamegraph links default to the GitHub Pages URLs; override for local links
+# with `make table FLAMEGRAPH_BASE=flamegraphs`.
+export FLAMEGRAPH_BASE
 table: generate_table.py
 	uv run --python $(PYTHON_VERSION) --isolated python generate_table.py
 
