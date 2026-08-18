@@ -25,7 +25,16 @@ compress_option = click.option(
 library_option = click.option(
     "--library",
     default="fsspec",
-    type=click.Choice(["fsspec", "obstore", "icechunk", "zarrista", "zarrista-obstore"]),
+    type=click.Choice(
+        [
+            "fsspec",
+            "obstore",
+            "icechunk",
+            "zarrista",
+            "zarrista-obstore",
+            "zarrista-icechunk",
+        ]
+    ),
     help="Library to use for file IO",
 )
 
@@ -79,6 +88,36 @@ def read(store_prefix, compress, library):
                 del z
                 time.sleep(1)
 
+    elif library == "zarrista-icechunk":
+        # Read-only: zarrista's icechunk bridge reconstructs a separate Rust
+        # session inside the extension, so writes never reach the Python repo.
+        # The data read here is written by the zarr-python + icechunk target.
+        import asyncio
+
+        import zarrista
+        from icechunk import Repository, Storage
+        from zarrista import AsyncArray
+
+        version = zarrista.__version__
+        label = f"read-{fs}-zarrista-{version}-icechunk-{compressed}"
+        profile = f"profiles/{label}.bin"
+        rm(profile)
+
+        icechunk_storage = Storage.new_local_filesystem(store_prefix)
+        repo = Repository.open(icechunk_storage)
+        session = repo.readonly_session("main")
+
+        async def read_async():
+            # The array is at the repo root, where the zarr+icechunk write puts it.
+            z = await AsyncArray.open(session)
+            return (await z[:]).to_numpy()
+
+        with memray.Tracker(profile, native_traces=True):
+            arr = asyncio.run(read_async())
+            print(arr.shape)
+            del arr
+            time.sleep(1)
+
     elif library == "icechunk":
         from icechunk import Repository, Storage
 
@@ -122,6 +161,17 @@ def read(store_prefix, compress, library):
 def write(store_prefix, compress, library):
     fs = filesystem(store_prefix)
     compressed = "compressed" if compress else "uncompressed"
+
+    if library == "zarrista-icechunk":
+        # zarrista writes to a session it reconstructs internally, so they never
+        # reach the Python repo and `commit` reports "no changes made to the
+        # session". Read profiles for this library use data written by
+        # `write --library icechunk` instead.
+        raise click.ClickException(
+            "zarrista cannot write to icechunk yet (its session bridge is read-only). "
+            "Write the data with `--library icechunk`, then read it back with "
+            "`read --library zarrista-icechunk`."
+        )
 
     if library in ("zarrista", "zarrista-obstore"):
         import zarrista

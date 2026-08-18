@@ -1,0 +1,8 @@
+click
+memray
+numpy
+# The session bridge serializes a Python session and reconstructs it with the
+# icechunk crate the zarrista extension links against, so the major versions
+# have to match (2.x).
+icechunk>=2
+zarrista==0.1.0

@@ -40,7 +40,9 @@ CURRENT_PROFILES = \
 	$(PROFILES_DIR)/read-local-zarrista-0.1.0-local-compressed.bin \
 	$(PROFILES_DIR)/read-local-zarrista-0.1.0-local-uncompressed.bin \
 	$(PROFILES_DIR)/read-local-zarrista-0.1.0-obstore-compressed.bin \
-	$(PROFILES_DIR)/read-local-zarrista-0.1.0-obstore-uncompressed.bin
+	$(PROFILES_DIR)/read-local-zarrista-0.1.0-obstore-uncompressed.bin \
+	$(PROFILES_DIR)/read-local-zarrista-0.1.0-icechunk-compressed.bin \
+	$(PROFILES_DIR)/read-local-zarrista-0.1.0-icechunk-uncompressed.bin
 
 # Read profiles depend on the corresponding write (data must exist first).
 # Uses explicit rules (not pattern rules) so Make merges prerequisites correctly.
@@ -60,6 +62,14 @@ CURRENT_PAIRS = \
 	zarrista-0.1.0-obstore-compressed \
 	zarrista-0.1.0-obstore-uncompressed
 $(foreach p,$(CURRENT_PAIRS),$(eval $(call LOCAL_READ_WRITE_DEP,$(p))))
+
+# zarrista reads icechunk but cannot write it (its session bridge is read-only),
+# so these reads consume what the zarr-python + icechunk writes produced rather
+# than a zarrista write of their own — hence no CURRENT_PAIRS entry.
+$(PROFILES_DIR)/read-local-zarrista-0.1.0-icechunk-compressed.bin: \
+	$(PROFILES_DIR)/write-local-zarr-$(CURRENT_ZARR)-icechunk-compressed.bin
+$(PROFILES_DIR)/read-local-zarrista-0.1.0-icechunk-uncompressed.bin: \
+	$(PROFILES_DIR)/write-local-zarr-$(CURRENT_ZARR)-icechunk-uncompressed.bin
 
 # latest zarr-python — local store — local
 $(PROFILES_DIR)/write-local-zarr-$(CURRENT_ZARR)-fsspec-compressed.bin: memray-array.py $(CURRENT_CONFIG)
@@ -127,6 +137,15 @@ $(PROFILES_DIR)/read-local-zarrista-0.1.0-obstore-compressed.bin: memray-array.p
 
 $(PROFILES_DIR)/read-local-zarrista-0.1.0-obstore-uncompressed.bin: memray-array.py configs/zarrista-0.1.0.txt
 	$(UV_RUN) configs/zarrista-0.1.0.txt memray-array.py read --no-compress --library zarrista-obstore
+
+# zarrista 0.1.0 — icechunk (async, read-only) — local
+# Reads the repos written by the zarr-python + icechunk targets above; needs
+# zarrista and icechunk in one environment, hence its own config.
+$(PROFILES_DIR)/read-local-zarrista-0.1.0-icechunk-compressed.bin: memray-array.py configs/zarrista-icechunk-0.1.0.txt
+	$(UV_RUN) configs/zarrista-icechunk-0.1.0.txt memray-array.py read --library zarrista-icechunk --store-prefix data/icechunk-compressed
+
+$(PROFILES_DIR)/read-local-zarrista-0.1.0-icechunk-uncompressed.bin: memray-array.py configs/zarrista-icechunk-0.1.0.txt
+	$(UV_RUN) configs/zarrista-icechunk-0.1.0.txt memray-array.py read --no-compress --library zarrista-icechunk --store-prefix data/icechunk-uncompressed
 
 # ══ Legacy targets ════════════════════════════════════════════════════════════
 # Older library versions, kept for reproducibility. Their results are frozen in

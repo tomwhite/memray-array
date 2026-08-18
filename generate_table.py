@@ -44,12 +44,21 @@ STORE_LABEL = {
     ("local", "local"):    "local",
 }
 
+# zarrista-icechunk is read-only (see the Makefile), so it contributes a row to
+# the reads table and none to writes — `generate_table` drops rows with no data.
+# zarrista cannot write to icechunk: its session bridge reconstructs a separate
+# Rust session, so writes never reach the repository.
+READ_ONLY_COMBINATIONS = {
+    ("write", "icechunk", "zarrista-0.1.0"),
+}
+
 ROW_ORDER = [
     ("local", "fsspec",   "3.3.0"),
     ("local", "obstore",  "3.3.0"),
     ("local", "icechunk", "3.3.0"),
     ("local", "local",    "zarrista-0.1.0"),
     ("local", "obstore",  "zarrista-0.1.0"),
+    ("local", "icechunk", "zarrista-0.1.0"),
 ]
 
 
@@ -83,7 +92,7 @@ def parse_profile(path: Path):
     if m:
         return m.groups()
     m = re.fullmatch(
-        r"(read|write)-(local|s3)-zarrista-(\d+\.\d+\.\d+)-(local|obstore)"
+        r"(read|write)-(local|s3)-zarrista-(\d+\.\d+\.\d+)-(local|obstore|icechunk)"
         r"-(compressed|uncompressed)\.bin",
         path.name,
     )
@@ -172,6 +181,10 @@ def main() -> None:
             continue
         op, fs, version, library, compression = parsed
         if version not in VERSION_DISPLAY:
+            continue
+        if (op, library, version) in READ_ONLY_COMBINATIONS:
+            # A stale profile from an experiment that could not work; ignoring it
+            # here keeps a meaningless number out of the table.
             continue
 
         print(f"Processing {profile.name} ...", flush=True)
