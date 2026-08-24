@@ -31,10 +31,10 @@ BEST = {
 # Older library versions (and S3) live in the static "Legacy results" table in
 # the README, which this script does not touch. When a new library version is
 # released, promote the outgoing row into the legacy table by hand and update
-# these tables plus CURRENT_ZARR in the Makefile.
-VERSION_DISPLAY = {
-    "3.3.0":         ("v3 (3.3.0/0.16.5)", "3"),
-    "zarrista-0.1.0": ("zarrista 0.1.0",    "3"),
+# this map plus CURRENT_ZARR in the Makefile.
+ZARR_FORMAT = {
+    "3.3.0":          "3",
+    "zarrista-0.1.0": "3",
 }
 
 STORE_LABEL = {
@@ -42,6 +42,16 @@ STORE_LABEL = {
     ("local", "obstore"):  "obstore",
     ("local", "icechunk"): "icechunk",
     ("local", "local"):    "local",
+}
+
+# The store library to name alongside zarr/zarrista in the "Libraries" column.
+# The local and fsspec stores ship inside zarr/zarrista themselves, so they add
+# nothing beyond the version already shown.
+STORE_PACKAGE = {
+    "fsspec":   None,
+    "local":    None,
+    "obstore":  "obstore",
+    "icechunk": "icechunk",
 }
 
 # zarrista-icechunk is read-only (see the Makefile), so it contributes a row to
@@ -102,6 +112,28 @@ def parse_profile(path: Path):
     return None
 
 
+def load_versions(profile: Path) -> dict:
+    """Versions recorded by memray-array.py when the profile was made."""
+    sidecar = profile.with_suffix(".versions.json")
+    if not sidecar.exists():
+        print(f"  WARNING: no {sidecar.name}, store version omitted", file=sys.stderr)
+        return {}
+    return json.loads(sidecar.read_text())
+
+
+def library_label(version: str, library: str, versions: dict) -> str:
+    """e.g. "zarr 3.3.0", "zarr 3.3.0, obstore 0.11.0", "zarrista 0.1.0"."""
+    if version.startswith("zarrista-"):
+        parts = [f"zarrista {version.removeprefix('zarrista-')}"]
+    else:
+        parts = [f"zarr {version}"]
+    package = STORE_PACKAGE[library]
+    if package:
+        # Fall back to the bare name rather than a wrong version if unrecorded.
+        parts.append(f"{package} {versions[package]}" if package in versions else package)
+    return ", ".join(parts)
+
+
 def make_cell(n: int, op: str, compression: str, fg: str) -> str:
     label = f"**{n}**" if n == BEST[(op, compression)] else str(n)
     return f"[{label}]({fg})"
@@ -110,12 +142,9 @@ def make_cell(n: int, op: str, compression: str, fg: str) -> str:
 def generate_table(op: str, results: dict) -> str:
     """Build a markdown table string for the given operation.
 
-    results: {(fs, library, version, compression): (n_copies, flamegraph_path)}
+    results: {(fs, library, version, compression): (n_copies, flamegraph, versions)}
     """
-    lines = [
-        "| Filesystem | Store   | Zarr library          | Zarr format | Uncompressed | Compressed |",
-        "|------------|---------|----------------------|-------------|--------------|------------|",
-    ]
+    rows = []
     prev_fs = prev_store = None
     for fs, library, version in ROW_ORDER:
         unc = results.get((fs, library, version, "uncompressed"))
@@ -124,21 +153,35 @@ def generate_table(op: str, results: dict) -> str:
             continue
 
         store = STORE_LABEL[(fs, library)]
-        ver_label, fmt = VERSION_DISPLAY[version]
+        # Both profiles of a row run in the same environment, so either one's
+        # recorded versions describe the row.
+        lib_label = library_label(version, library, (unc or com)[2])
 
         present = [(c, x) for c, x in [("uncompressed", unc), ("compressed", com)] if x is not None]
         if all(x[0] == BEST[(op, c)] for c, x in present):
-            ver_label = f"**{ver_label}**"
+            lib_label = f"**{lib_label}**"
 
-        fs_col    = fs.capitalize() if fs != prev_fs else ""
-        store_col = store if (store != prev_store or fs != prev_fs) else ""
-
-        unc_cell = make_cell(unc[0], op, "uncompressed", unc[1]) if unc else "-"
-        com_cell = make_cell(com[0], op, "compressed",   com[1]) if com else "-"
-
-        lines.append(f"| {fs_col:<10} | {store_col:<7} | {ver_label:<21} | {fmt:<11} | {unc_cell:<12} | {com_cell} |")
+        rows.append((
+            fs.capitalize() if fs != prev_fs else "",
+            store if (store != prev_store or fs != prev_fs) else "",
+            lib_label,
+            ZARR_FORMAT[version],
+            make_cell(unc[0], op, "uncompressed", unc[1]) if unc else "-",
+            make_cell(com[0], op, "compressed",   com[1]) if com else "-",
+        ))
         prev_fs    = fs
         prev_store = store
+
+    # The libraries column is the only one whose width varies with the data.
+    width = max([len("Libraries")] + [len(r[2]) for r in rows])
+    lines = [
+        f"| Filesystem | Store    | {'Libraries':<{width}} | Zarr format | Uncompressed | Compressed |",
+        f"|------------|----------|{'-' * (width + 2)}|-------------|--------------|------------|",
+    ]
+    for fs_col, store_col, lib_label, fmt, unc_cell, com_cell in rows:
+        lines.append(
+            f"| {fs_col:<10} | {store_col:<8} | {lib_label:<{width}} | {fmt:<11} | {unc_cell:<12} | {com_cell} |"
+        )
 
     return "\n".join(lines) + "\n"
 
@@ -180,7 +223,7 @@ def main() -> None:
         if parsed is None:
             continue
         op, fs, version, library, compression = parsed
-        if version not in VERSION_DISPLAY:
+        if version not in ZARR_FORMAT:
             continue
         if (op, library, version) in READ_ONLY_COMBINATIONS:
             # A stale profile from an experiment that could not work; ignoring it
@@ -196,7 +239,7 @@ def main() -> None:
         n = copy_count(peak)
         fg = f"{FLAMEGRAPH_BASE}/{profile.name}.html"
         key = (fs, library, version, compression)
-        (writes if op == "write" else reads)[key] = (n, fg)
+        (writes if op == "write" else reads)[key] = (n, fg, load_versions(profile))
         print(f"  {n} copies (peak {peak:,})", flush=True)
 
     writes_table = generate_table("write", writes)

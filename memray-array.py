@@ -1,3 +1,4 @@
+import json
 import os
 import time
 from pathlib import Path
@@ -56,6 +57,7 @@ def read(store_prefix, compress, library):
         path = f"/zarrista-{version}-{store_kind}-{compressed}.zarr"
         profile = f"profiles/{label}.bin"
         rm(profile)
+        record_versions(label, library)
 
         if store_kind == "obstore":
             # obstore is only supported by zarrista's async API.
@@ -102,6 +104,7 @@ def read(store_prefix, compress, library):
         label = f"read-{fs}-zarrista-{version}-icechunk-{compressed}"
         profile = f"profiles/{label}.bin"
         rm(profile)
+        record_versions(label, library)
 
         icechunk_storage = Storage.new_local_filesystem(store_prefix)
         repo = Repository.open(icechunk_storage)
@@ -132,6 +135,7 @@ def read(store_prefix, compress, library):
         label = f"read-{fs}-zarr-{zarr_version}-{library}-{compressed}"
         profile = f"profiles/{label}.bin"
         rm(profile)
+        record_versions(label, library)
 
         with memray.Tracker(profile, native_traces=True):
             z = zarr.open(store, mode="r")
@@ -147,6 +151,7 @@ def read(store_prefix, compress, library):
         store = get_zarr_store(fs, library, store)
         profile = f"profiles/{label}.bin"
         rm(profile)
+        record_versions(label, library)
 
         with memray.Tracker(profile, native_traces=True):
             z = zarr.open(store, mode="r")
@@ -183,6 +188,7 @@ def write(store_prefix, compress, library):
         path = f"/zarrista-{version}-{store_kind}-{compressed}.zarr"
         profile = f"profiles/{label}.bin"
         rm(profile)
+        record_versions(label, library)
 
         def build(arr):
             grid = ChunkGrid.regular(arr.shape, chunk_shape=arr.shape)
@@ -237,6 +243,7 @@ def write(store_prefix, compress, library):
             label = f"write-{fs}-zarr-{zarr_version}-{library}-{compressed}"
             profile = f"profiles/{label}.bin"
             rm(profile)
+            record_versions(label, library)
 
             with memray.Tracker(profile, native_traces=True):
                 rng = np.random.default_rng()
@@ -262,6 +269,7 @@ def write(store_prefix, compress, library):
         store = get_zarr_store(fs, library, store)
         profile = f"profiles/{label}.bin"
         rm(profile)
+        record_versions(label, library)
 
         with memray.Tracker(profile, native_traces=True):
             rng = np.random.default_rng()
@@ -291,6 +299,38 @@ def write(store_prefix, compress, library):
                     **kwargs,
                 )
             z[:] = arr
+
+
+def libraries_under_test(library):
+    """Packages whose versions determine what a profile measures."""
+    if library.startswith("zarrista"):
+        packages = ["zarrista"]
+    else:
+        packages = ["zarr", "numcodecs"]
+    if library.endswith("obstore"):
+        packages.append("obstore")
+    elif library.endswith("icechunk"):
+        packages.append("icechunk")
+    return packages
+
+
+def record_versions(label, library):
+    """Write the library versions a profile exercised next to the profile itself.
+
+    The configs pin zarr/zarrista but leave the store libraries floating, so a
+    profile's versions are only knowable at run time. `generate_table.py` reads
+    these files to label the README tables.
+    """
+    from importlib.metadata import PackageNotFoundError
+    from importlib.metadata import version as package_version
+
+    versions = {}
+    for package in libraries_under_test(library):
+        try:
+            versions[package] = package_version(package)
+        except PackageNotFoundError:
+            pass
+    Path(f"profiles/{label}.versions.json").write_text(json.dumps(versions, indent=2) + "\n")
 
 
 def filesystem(store_prefix):
