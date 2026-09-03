@@ -6,11 +6,12 @@ In an ideal world array storage operations would be zero-copy, but many librarie
 
 ## TL;DR
 
-* **Writes** with the latest Zarr Python are best achievable (0 copies uncompressed, 1 compressed), for both the local store and obstore
+* **Writes** with the latest Zarr Python are best achievable (0 copies uncompressed, 1 compressed), for the local store, obstore, and icechunk
 * **Reads** still need a lot of work, see: Codec pipeline memory usage https://github.com/zarr-developers/zarr-python/issues/2904, but the new Zarrista library looks very promising here
 
 ## Updates
 
+* 3 September 2026. Icechunk 2.2.0 was released, which included https://github.com/earth-mover/icechunk/pull/2332, removing the buffer copy that its Python store wrapper made (`Buffer.to_bytes()`) before handing an encoded chunk to Rust. Icechunk writes are now best achievable, 0 copies uncompressed and 1 compressed. Reads are unchanged, see https://github.com/earth-mover/icechunk/issues/2345
 * 24 August 2026. obstore 0.11.1 was released, which included https://github.com/developmentseed/obstore/pull/771, removing the buffer copy that the multipart upload path made for in-memory buffers. Uncompressed obstore writes are now zero-copy.
 * 17 August 2026. Add icechunk as a current target.
 * 15 August 2026. Added zarrs (via Zarrista) to the comparison - the first library tested to achieve zero-copy uncompressed reads - and split the results into current and legacy tables.
@@ -49,7 +50,7 @@ Number of extra copies needed to write an array to storage using Zarr. (Links ar
 |------------|----------|--------------------------------|-------------|--------------|------------|
 | Local      | local    | **zarr 3.3.0**                 | 3           | [**0**](https://tomwhite.github.io/memray-array/flamegraphs/write-local-zarr-3.3.0-fsspec-uncompressed.bin.html) | [**1**](https://tomwhite.github.io/memray-array/flamegraphs/write-local-zarr-3.3.0-fsspec-compressed.bin.html) |
 |            | obstore  | **zarr 3.3.0, obstore 0.11.1** | 3           | [**0**](https://tomwhite.github.io/memray-array/flamegraphs/write-local-zarr-3.3.0-obstore-uncompressed.bin.html) | [**1**](https://tomwhite.github.io/memray-array/flamegraphs/write-local-zarr-3.3.0-obstore-compressed.bin.html) |
-|            | icechunk | zarr 3.3.0, icechunk 2.1.2     | 3           | [1](https://tomwhite.github.io/memray-array/flamegraphs/write-local-zarr-3.3.0-icechunk-uncompressed.bin.html) | [2](https://tomwhite.github.io/memray-array/flamegraphs/write-local-zarr-3.3.0-icechunk-compressed.bin.html) |
+|            | icechunk | **zarr 3.3.0, icechunk 2.2.0** | 3           | [**0**](https://tomwhite.github.io/memray-array/flamegraphs/write-local-zarr-3.3.0-icechunk-uncompressed.bin.html) | [**1**](https://tomwhite.github.io/memray-array/flamegraphs/write-local-zarr-3.3.0-icechunk-compressed.bin.html) |
 |            | local    | zarrista 0.1.0                 | 3           | [1](https://tomwhite.github.io/memray-array/flamegraphs/write-local-zarrista-0.1.0-local-uncompressed.bin.html) | [**1**](https://tomwhite.github.io/memray-array/flamegraphs/write-local-zarrista-0.1.0-local-compressed.bin.html) |
 |            | obstore  | zarrista 0.1.0, obstore 0.11.1 | 3           | [1](https://tomwhite.github.io/memray-array/flamegraphs/write-local-zarrista-0.1.0-obstore-uncompressed.bin.html) | [**1**](https://tomwhite.github.io/memray-array/flamegraphs/write-local-zarrista-0.1.0-obstore-compressed.bin.html) |
 
@@ -65,10 +66,10 @@ Number of extra copies needed to read an array from storage using Zarr. (Links a
 |------------|----------|------------------------------------|-------------|--------------|------------|
 | Local      | local    | zarr 3.3.0                         | 3           | [1](https://tomwhite.github.io/memray-array/flamegraphs/read-local-zarr-3.3.0-fsspec-uncompressed.bin.html) | [2](https://tomwhite.github.io/memray-array/flamegraphs/read-local-zarr-3.3.0-fsspec-compressed.bin.html) |
 |            | obstore  | zarr 3.3.0, obstore 0.11.1         | 3           | [1](https://tomwhite.github.io/memray-array/flamegraphs/read-local-zarr-3.3.0-obstore-uncompressed.bin.html) | [2](https://tomwhite.github.io/memray-array/flamegraphs/read-local-zarr-3.3.0-obstore-compressed.bin.html) |
-|            | icechunk | zarr 3.3.0, icechunk 2.1.2         | 3           | [2](https://tomwhite.github.io/memray-array/flamegraphs/read-local-zarr-3.3.0-icechunk-uncompressed.bin.html) | [2](https://tomwhite.github.io/memray-array/flamegraphs/read-local-zarr-3.3.0-icechunk-compressed.bin.html) |
+|            | icechunk | zarr 3.3.0, icechunk 2.2.0         | 3           | [2](https://tomwhite.github.io/memray-array/flamegraphs/read-local-zarr-3.3.0-icechunk-uncompressed.bin.html) | [2](https://tomwhite.github.io/memray-array/flamegraphs/read-local-zarr-3.3.0-icechunk-compressed.bin.html) |
 |            | local    | **zarrista 0.1.0**                 | 3           | [**0**](https://tomwhite.github.io/memray-array/flamegraphs/read-local-zarrista-0.1.0-local-uncompressed.bin.html) | [**1**](https://tomwhite.github.io/memray-array/flamegraphs/read-local-zarrista-0.1.0-local-compressed.bin.html) |
 |            | obstore  | **zarrista 0.1.0, obstore 0.11.1** | 3           | [**0**](https://tomwhite.github.io/memray-array/flamegraphs/read-local-zarrista-0.1.0-obstore-uncompressed.bin.html) | [**1**](https://tomwhite.github.io/memray-array/flamegraphs/read-local-zarrista-0.1.0-obstore-compressed.bin.html) |
-|            | icechunk | zarrista 0.1.0, icechunk 2.1.2     | 3           | [1](https://tomwhite.github.io/memray-array/flamegraphs/read-local-zarrista-0.1.0-icechunk-uncompressed.bin.html) | [**1**](https://tomwhite.github.io/memray-array/flamegraphs/read-local-zarrista-0.1.0-icechunk-compressed.bin.html) |
+|            | icechunk | zarrista 0.1.0, icechunk 2.2.0     | 3           | [1](https://tomwhite.github.io/memray-array/flamegraphs/read-local-zarrista-0.1.0-icechunk-uncompressed.bin.html) | [**1**](https://tomwhite.github.io/memray-array/flamegraphs/read-local-zarrista-0.1.0-icechunk-compressed.bin.html) |
 
 <!-- end-table:reads -->
 
@@ -146,6 +147,7 @@ This delves into what is happening for the different code paths, and suggests so
 * [numcodecs] Extra memory copies in blosc, lz4, and zstd compress functions - https://github.com/zarr-developers/numcodecs/issues/717 (fixed)
 * [numcodecs] Switch `Buffer`s to `memoryview`s - https://github.com/zarr-developers/numcodecs/pull/656 (fixed)
 * [obstore] Reduce memory overhead for multipart uploads - https://github.com/developmentseed/obstore/pull/771 (fixed, released in 0.11.1)
+* [icechunk] Avoid memory copy of the NumPy buffer when writing to an icechunk store - https://github.com/earth-mover/icechunk/pull/2332 (fixed, released in 2.2.0)
 * [s3fs] Using the Python buffer protocol in `pipe` - https://github.com/fsspec/s3fs/issues/959
 
 ## How to run
